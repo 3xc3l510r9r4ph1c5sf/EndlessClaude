@@ -113,9 +113,69 @@ const ChatInterface: React.FC = () => {
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto bg-transparent">
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10">
-        <h1 className="text-2xl font-bold text-white mb-2">AI Chat Assistant</h1>
-        <p className="text-gray-300">Chat with Claude AI - Your intelligent assistant</p>
+      <div className="flex-shrink-0 p-6 border-b border-white/10 flex justify-center items-center">
+        <motion.h1 
+          className="text-4xl md:text-6xl font-black text-white tracking-wider select-none"
+          style={{
+            textShadow: `
+              0 1px 0 #ccc,
+              0 2px 0 #c9c9c9,
+              0 3px 0 #bbb,
+              0 4px 0 #b9b9b9,
+              0 5px 0 #aaa,
+              0 6px 1px rgba(0,0,0,.1),
+              0 0 5px rgba(0,0,0,.1),
+              0 1px 3px rgba(0,0,0,.3),
+              0 3px 5px rgba(0,0,0,.2),
+              0 5px 10px rgba(0,0,0,.25),
+              0 10px 10px rgba(0,0,0,.2),
+              0 20px 20px rgba(0,0,0,.15)
+            `
+          }}
+          initial={{ y: -50, opacity: 0, scale: 0.8 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ 
+            duration: 1.2,
+            ease: "easeOut",
+            type: "spring",
+            stiffness: 100
+          }}
+          whileHover={{ 
+            scale: 1.05,
+            textShadow: `
+              0 1px 0 #ddd,
+              0 2px 0 #d9d9d9,
+              0 3px 0 #ccc,
+              0 4px 0 #c9c9c9,
+              0 5px 0 #bbb,
+              0 6px 1px rgba(0,0,0,.2),
+              0 0 8px rgba(0,0,0,.2),
+              0 1px 3px rgba(0,0,0,.4),
+              0 3px 5px rgba(0,0,0,.3),
+              0 5px 10px rgba(0,0,0,.35),
+              0 10px 10px rgba(0,0,0,.3),
+              0 20px 20px rgba(0,0,0,.25)
+            `,
+            transition: { duration: 0.3 }
+          }}
+        >
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+          >
+            MANDOBOT
+          </motion.span>
+          {" "}
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+            className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent"
+          >
+            PRIME
+          </motion.span>
+        </motion.h1>
       </div>
 
       {/* Chat Messages */}
