@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { PromptInputBox } from './ui/ai-prompt-box';
 import { Copy, User, Bot, Check } from 'lucide-react';
 
