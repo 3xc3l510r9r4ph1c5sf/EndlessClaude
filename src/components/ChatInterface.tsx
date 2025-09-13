@@ -30,8 +30,9 @@ const ChatInterface: React.FC = () => {
 
   const getAIResponse = async (userMessage: string): Promise<string> => {
     try {
+      // Use streaming for better user experience
       const response = await puter.ai.chat(userMessage, {
-        model: "claude-3-5-sonnet",
+        model: "claude-sonnet-4", // Updated to use available model
         stream: true
       });
 
