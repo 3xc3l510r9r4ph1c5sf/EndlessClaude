@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PromptInputBox } from './ui/ai-prompt-box';
 import { Copy, User, Bot, Check } from 'lucide-react';
+import * as puter from '@puter/js';
 
 interface Message {
   id: string;
@@ -27,32 +28,22 @@ const ChatInterface: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const simulateAIResponse = async (userMessage: string): Promise<string> => {
-    // Simulate AI thinking time
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 2000));
-    
-    // Simple response logic based on message content
-    if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
-      return "Hello! I'm Claude, your AI assistant. How can I help you today?";
-    } else if (userMessage.toLowerCase().includes('weather')) {
-      return "I don't have access to real-time weather data, but I'd be happy to help you find weather information or discuss climate topics in general.";
-    } else if (userMessage.includes('[Search:')) {
-      return "I understand you'd like me to search for information. In a real implementation, I would search the web for relevant results about your query.";
-    } else if (userMessage.includes('[Think:')) {
-      return "Let me think deeply about this... In this mode, I would provide more thoughtful, analytical responses with deeper reasoning and consideration of multiple perspectives.";
-    } else if (userMessage.includes('[Canvas:')) {
-      return "Canvas mode activated! In a real implementation, this would allow me to create visual content, diagrams, or interactive elements to help illustrate concepts.";
-    } else if (userMessage.includes('[Voice message')) {
-      return "I received your voice message! In a complete implementation, I would process the audio and respond accordingly.";
-    } else {
-      const responses = [
-        "That's an interesting question! I'd be happy to help you explore that topic further.",
-        "I understand what you're asking about. Let me provide some insights on that.",
-        "Great question! Here's what I can tell you about that subject.",
-        "I appreciate you sharing that with me. Let me offer some thoughts on this matter.",
-        "That's a thoughtful inquiry. I'll do my best to provide you with a helpful response."
-      ];
-      return responses[Math.floor(Math.random() * responses.length)] + " (This is a demo response - in a real implementation, I would provide more specific and helpful answers based on your actual question.)";
+  const getAIResponse = async (userMessage: string): Promise<string> => {
+    try {
+      const response = await puter.ai.chat(userMessage, {
+        model: "claude-3-5-sonnet",
+        stream: true
+      });
+
+      let fullResponse = '';
+      for await (const part of response) {
+        fullResponse += part?.text || "";
+      }
+
+      return fullResponse || "I apologize, but I didn't receive a proper response. Please try again.";
+    } catch (error) {
+      console.error('AI API Error:', error);
+      throw new Error(`Failed to get AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -72,8 +63,8 @@ const ChatInterface: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate AI response
-      const aiResponse = await simulateAIResponse(content);
+      // Get real AI response
+      const aiResponse = await getAIResponse(content);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
