@@ -2,7 +2,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PromptInputBox } from './ui/ai-prompt-box';
 import { Copy, User, Bot, Check } from 'lucide-react';
-import * as puter from '@puter/js';
+// remove: import * as puter from '@puter/js';
+
+declare global {
+  interface Window { puter?: any; }
+}
+
+// helper to lazily obtain puter
+const getPuter = async (): Promise<any> => {
+  // prefer a global puter (CDN script)
+  if (typeof window !== 'undefined' && (window as any).puter) {
+    return (window as any).puter;
+  }
+
+  // otherwise try dynamic import (works if package is installed)
+  try {
+    const mod = await import('@puter/js');
+    // depending on package export style, it might be default or named
+    return (mod && (mod.default || mod));
+  } catch (err) {
+    console.warn('Failed to dynamically import @puter.js, and window.puter not found.', err);
+    throw err;
+  }
+};
 
 interface Message {
   id: string;
@@ -18,6 +40,17 @@ const ChatInterface: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    // optional: warm up puter at mount so first call is faster
+    (async () => {
+      try {
+        await getPuter();
+      } catch (e) {
+        // ignore, will show user-friendly error later when used
+      }
+    })();
+  }, []);
+
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -29,7 +62,15 @@ const ChatInterface: React.FC = () => {
   }, [messages]);
 
   const getAIResponse = async (userMessage: string): Promise<string> => {
+    let puter: any;
     try {
+      puter = await getPuter();
+    } catch (err) {
+      console.error('Puter not available:', err);
+      throw new Error('AI service is unavailable. Make sure puter is included or @puter/js is installed.');
+    }
+    try {
+      // Use streaming for better user experience
       // Use streaming for better user experience
       const response = await puter.ai.chat(userMessage, {
         model: "claude-sonnet-4", // Updated to use available model
