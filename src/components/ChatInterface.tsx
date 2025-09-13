@@ -61,7 +61,7 @@ const ChatInterface: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const getAIResponse = async (userMessage: string): Promise<string> => {
+  const getAIResponse = async (userMessage: string, files?: File[]): Promise<string> => {
     let puter: any;
     try {
       puter = await getPuter();
@@ -69,21 +69,82 @@ const ChatInterface: React.FC = () => {
       console.error('Puter not available:', err);
       throw new Error('AI service is unavailable. Make sure puter is included or @puter/js is installed.');
     }
+
+    // Array to keep track of uploaded files for cleanup
+    const uploadedFiles: string[] = [];
+
     try {
-      // Use streaming for better user experience
-      // Use streaming for better user experience
-      const response = await puter.ai.chat(userMessage, {
-        model: "claude-sonnet-4", // Updated to use available model
-        stream: true
-      });
+      let response;
+      
+      // Check if we have files to process (multimodal input)
+      if (files && files.length > 0) {
+        // Upload files to Puter's file system temporarily
+        const fileContent = [];
+        
+        for (const file of files) {
+          // Only process image files
+          if (file.type.startsWith('image/')) {
+            const fileName = `temp_image_${Date.now()}_${file.name}`;
+            const uploadedFile = await puter.fs.write(fileName, file);
+            uploadedFiles.push(uploadedFile.path);
+            
+            fileContent.push({
+              type: 'file',
+              puter_path: uploadedFile.path
+            });
+          }
+        }
+        
+        // Add text content
+        if (userMessage.trim()) {
+          fileContent.push({
+            type: 'text',
+            text: userMessage
+          });
+        }
+        
+        // Create multimodal message array
+        const messages = [{
+          role: 'user',
+          content: fileContent
+        }];
+        
+        response = await puter.ai.chat(messages, {
+          model: "claude-sonnet-4",
+          stream: true
+        });
+      } else {
+        // Standard text-only chat
+        response = await puter.ai.chat(userMessage, {
+          model: "claude-sonnet-4",
+          stream: true
+        });
+      }
 
       let fullResponse = '';
       for await (const part of response) {
         fullResponse += part?.text || "";
       }
 
+      // Clean up uploaded files
+      for (const filePath of uploadedFiles) {
+        try {
+          await puter.fs.delete(filePath);
+        } catch (cleanupError) {
+          console.warn('Failed to clean up uploaded file:', filePath, cleanupError);
+        }
+      }
+
       return fullResponse || "I apologize, but I didn't receive a proper response. Please try again.";
     } catch (error) {
+      // Clean up uploaded files in case of error
+      for (const filePath of uploadedFiles) {
+        try {
+          await puter.fs.delete(filePath);
+        } catch (cleanupError) {
+          console.warn('Failed to clean up uploaded file during error:', filePath, cleanupError);
+        }
+      }
       console.error('AI API Error:', error);
       throw new Error(`Failed to get AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -106,7 +167,7 @@ const ChatInterface: React.FC = () => {
 
     try {
       // Get real AI response
-      const aiResponse = await getAIResponse(content);
+      const aiResponse = await getAIResponse(content, files);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
